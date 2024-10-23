@@ -704,10 +704,11 @@ with tabs[3]:  # 배당 분석
 
     # 서버에 설치된 한글 폰트 찾기
     #font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'NanumGothic.ttf')
-    ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    #ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     # fonts 폴더와 data 폴더 경로 설정
-    font_path = os.path.join(ROOT_DIR, 'fonts', 'NanumGothic.ttf')
+    #font_path = os.path.join(ROOT_DIR, 'fonts', 'NanumGothic.ttf')
+    font_path='NanumGothic.ttf'
     #for font in fm.findSystemFonts():
     #    if 'gothic' in font.lower() or 'gulim' in font.lower():
     #        font_path = font
