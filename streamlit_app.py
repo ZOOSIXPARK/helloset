@@ -4,6 +4,9 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+import matplotlib.font_manager as fm
 
 # 페이지 설정
 st.set_page_config(
@@ -85,12 +88,12 @@ st.markdown("""
 @st.cache_data
 def load_data():
     df = pd.read_csv("value_jipyo.csv")
-    numeric_columns = ['PBR', 'PER', 'ROE', '배당수익률', '시가총액(단위:백만원)', '자산총액(단위:백만원)', 
-                      '종가', '등락률', '거래량', '거래대금', '배당성향']
+    numeric_columns = ['PBR', 'PER', 'ROE', '배당수익률', '시가총액(단위:백만원)', 
+                       '종가', '등락률', '거래량', '거래대금', '배당성향']
     
     year_columns = {
         'PBR': ['`23 사업연도말 PBR', '`22 사업연도말 PBR', '`21 사업연도말 PBR'],
-        'PER': ['`23 사업연도말 PER', '`22 사업연도말 PER', '`21 사업연도말 PER'],
+        'PER': ['`23 사업연도말 PER', '`22 사업연도말 PER', '`21 사업연도말 PER'],  # '사업도말'을 '사업연도말'로 수정
         'ROE': ['`23 사업연도말 ROE', '`22 사업연도말 ROE', '`21 사업연도말 ROE'],
         '배당수익률': ['`23 사업연도말 배당수익률', '`22 사업연도말 배당수익률', '`21 사업연도말 배당수익률'],
         '배당성향': ['`23 사업연도말 배당성향', '`22 사업연도말 배당성향', '`21 사업연도말 배당성향']
@@ -98,15 +101,17 @@ def load_data():
     
     # 기본 숫자형 변환 및 이상치 처리
     for col in numeric_columns:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-        if col in ['PER', 'PBR', 'ROE']:
-            df[col] = df[col].clip(lower=df[col].quantile(0.01), 
-                                 upper=df[col].quantile(0.99))
+        if col in df.columns:  # 열이 존재하는 경우에만 처리
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            if col in ['PER', 'PBR', 'ROE']:
+                df[col] = df[col].clip(lower=df[col].quantile(0.01), 
+                                     upper=df[col].quantile(0.99))
     
     # 연도별 데이터 숫자형 변환
     for metric, year_cols in year_columns.items():
         for col in year_cols:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+            if col in df.columns:  # 열이 존재하는 경우에만 처리
+                df[col] = pd.to_numeric(df[col], errors='coerce')
     
     return df, year_columns, numeric_columns
 
@@ -182,23 +187,171 @@ with tabs[0]:  # 시장 개요
             sector_stats.nlargest(5, '시가총액(단위:백만원)'),
             values='시가총액(단위:백만원)',
             names='섹터',
-            title='섹터별 시가총액 비중',
+            title='상위 5개 섹터별 시가총액 비중',
             color_discrete_sequence=px.colors.qualitative.Set3
         )
-        fig.update_layout(get_chart_layout())
-        st.plotly_chart(fig, use_container_width=True)
+
+    # 레이아웃 업데이트
+        fig.update_layout(
+            title={
+                'text': "상위 5개 섹터별 시가총액 비중",
+                'y':0.95,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {'size': 24}
+            },
+            # 레이블을 오른쪽으로
+            legend={
+                'yanchor': "middle",
+                'y': 0.5,
+                'xanchor': "left",
+                'x': 1.1
+            }
+        )
     
+        # 파이 차트 레이블 설정
+        fig.update_traces(
+            textposition='inside', 
+            textinfo='percent+label'
+        )
+    
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("이 차트는 시가총액 기준 상위 5개 섹터의 비중을 보여줍니다. 각 섹터가 전체 시장에서 차지하는 비율을 한눈에 파악할 수 있습니다.")
     with col2:
         fig = px.histogram(
             df,
             x='시가총액(단위:백만원)',
             nbins=50,
-            title='시가총액 분포',
+            title='기업 시가총액 분포',
             color_discrete_sequence=['#1f77b4']
         )
-        fig.update_layout(get_chart_layout())
+        
+        fig.update_layout(
+            title={
+                'text': "기업 시가총액 분포",
+                'y':0.95,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {'size': 24}
+            },
+            yaxis=dict(
+                title="기업 수",
+                side='right',  # y축 레이블을 오른쪽으로
+                titlefont=dict(size=14),
+                tickfont=dict(size=12)
+            ),
+            xaxis=dict(
+                title="시(:백만원)",
+                titlefont=dict(size=14),
+                tickfont=dict(size=12)
+            ),
+            plot_bgcolor='white',
+            paper_bgcolor='white'
+        )
+        
         st.plotly_chart(fig, use_container_width=True)
-# 이전 코드에 이어서...
+        st.markdown("이 히스토그램은 기업들의 시가총액 분포를 보여줍니다. 대부분의 기업이 어느 범위의 시가총액을 가지고 있는지, 극단적으로 큰 시가총액을 가진 기업은 얼마나 있는지 파악할 수 있습니다.")
+    # 배당률 높은 기업 트리맵 추가
+    st.subheader("ROE 상위 기업 트리맵")
+    
+    # ROE 상위 50개 기업 선택
+    top_roe_companies = df.nlargest(50, 'ROE').copy()
+    
+    # 배당수익률에 따른 색상 범위 설정
+    min_dividend = top_roe_companies['배당수익률'].min()
+    max_dividend = top_roe_companies['배당수익률'].max()
+
+    # 트리맵 생성
+    fig = px.treemap(
+        top_roe_companies,
+        path=['종목명'],
+        values='ROE',
+        color='배당수익률',
+        hover_data=['ROE', '배당수익률', 'PBR', '시가총액(단위:백만원)'],
+        color_continuous_scale='YlOrRd',  # 노랑-주황-빨강 색상 스키마
+        range_color=[min_dividend, max_dividend]
+    )
+
+    fig.update_traces(
+        textinfo="label+value",
+        textfont=dict(size=12, color='black'),
+        hovertemplate='<b>%{label}</b><br>' +
+                      'ROE: %{value:.2f}%<br>' +
+                      '배당수익률: %{customdata[1]:.2f}%<br>' +
+                      'PBR: %{customdata[2]:.2f}<br>' +
+                      '시가총액: %{customdata[3]:,.0f}백만원'
+    )
+
+    fig.update_layout(
+        height=700,
+        coloraxis_colorbar=dict(
+            title="배당수익률 (%)",
+            tickformat=".2f",
+            len=0.5,  # 컬러바 길이 조정
+            yanchor="top",  # 컬러바 위치 조정
+            y=1,
+            xanchor="left",
+            x=1.02
+        ),
+        font=dict(family="Malgun Gothic", size=14),
+        margin=dict(t=30, l=10, r=10, b=10),
+        title={
+            'text': "ROE 상위 50개 기업의 배당수익률",
+            'y':0.98,
+            'x':0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': {'size': 24}
+        }
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""
+    **ROE 상위 50개 기업을 시각화한 트리맵입니다.**
+    - 사각형의 크기: ROE 값
+    - 색상: 배당수익률 (짙은 빨강일수록 높은 배당수익률)
+    - 텍스트: 기업명과 ROE 값
+    - 호버 보: ROE, 배당수익률, PBR, 시가총액
+
+    이 시각화를 통해 ROE가 높은 기업들 중에서 배당수익률이 어떻게 분포되어 있는지,
+    그리고 각 기업의 주요 지표들을 한눈에 파악할 수 있습니다.
+    """)
+
+    st.subheader("섹터별 배당률과 배당성향 히트맵")
+
+    # 섹터별 평균 배당률과 배당성향 계산
+    sector_dividend = df.groupby('섹터')[['배당수익률', '배당성향']].mean().reset_index()
+
+    # 히트맵 생성
+    fig = px.imshow(sector_dividend[['배당수익률', '배당성향']],
+                    labels=dict(x="지표", y="섹터", color="값"),
+                    x=['배당수익률', '배당성향'],
+                    y=sector_dividend['섹터'],
+                    color_continuous_scale="YlOrRd",
+                    aspect="auto")
+
+    # 셀에 값 표시
+    fig.update_traces(text=sector_dividend[['배당수익률', '배당성향']].values.round(2), texttemplate="%{text}")
+    fig.update_layout(
+        title="섹터별 평균 배당률과 배당성향",
+        xaxis_title="",
+        yaxis_title="",
+        height=600,
+        width=800,
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""
+    이 히트맵은 각 섹터의 평균 배당률과 배당성향을 보여줍니다:
+    - 배당률: 주가 대비 1주당 배당금의 비율을 나타냅니다. 높을수록 현재 주가 대비 배당금이 많다는 의미입니다.
+    - 배당성향: 순이익 대비 배당금 지급 비율을 나타냅니다. 높을수록 기업이 이익의 더 많은 부분을 배당으로 지급한다는 의미입니다.
+    
+    색상이 진할수록 해당 값이 높음을 나타냅니다. 이를 통해 어떤 섹터가 배당 투자에 적합한지 파악할 수 있습니다.
+    """)
 
 with tabs[1]:  # 섹터 분석
     st.subheader("섹터별 분석")
@@ -218,10 +371,11 @@ with tabs[1]:  # 섹터 분석
         marker_color=COLOR_SCALES['main'][1]
     ))
     fig.update_layout(
-        **get_chart_layout("섹터별 PBR과 ROE"),
+        **get_chart_layout("섹터별 평균 PBR과 ROE"),
         barmode='group'
     )
     st.plotly_chart(fig, use_container_width=True)
+    st.markdown("이 그래프는 각 섹터의 평균 PBR과 ROE를 비교하여 보여줍니다. 이를 통해 어떤 섹터가 상대적으로 저평가되어 있는지, 또는 수익성이 높은지 파악할 수 있습니다.")
     
     # 섹터별 평균 지표 비교
     col1, col2 = st.columns(2)
@@ -233,14 +387,14 @@ with tabs[1]:  # 섹터 분석
             y='ROE',
             size='시가총액(단위:백만원)',
             color='섹터',
-            title='섹터별 PBR vs ROE',
+            title='섹터별 PBR vs ROE 비교',
             labels={'PBR': 'PBR', 'ROE': 'ROE (%)'}
         )
         fig.update_layout(get_chart_layout())
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown("이 산점도는 각 섹터의 평균 PBR과 ROE를 비교하며, 버블의 크기는 해당 섹터의 총 시가총액을 나타냅니다. 이를 통해 각 섹터의 가치와 수익성, 그고 시장 규모를 한 번에 비교할 수 있습니다.")
     
     with col2:
-        # 섹터별 평균 배당수익률
         fig = px.bar(
             sector_stats.sort_values('배당수익률', ascending=False),
             x='섹터',
@@ -251,6 +405,7 @@ with tabs[1]:  # 섹터 분석
         )
         fig.update_layout(get_chart_layout())
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown("이 막대 그래프는 각 섹터의 평균 배당수익률을 보여줍니다. 색상의 진한 정도로 배당수익률의 높낮이를 직관적으로 파악할 수 있으며, 어떤 섹터가 상대적으로 높은 배당을 제공하는지 알 수 있습니다.")
 
     # 업종별 투자 매력도
     sector_metrics = df[df['섹터'].notna()].groupby('섹터').agg({
@@ -290,9 +445,19 @@ with tabs[2]:  # 개별 종목 분석
     with col1:
         st.metric("현재가", f"{stock_data['종가']:,.0f}")
     with col2:
-        st.metric("등락률", f"{stock_data['등락률']:.2f}%")
+        st.metric("PER", f"{stock_data['PER']:.2f}")
     with col3:
+        st.metric("PBR", f"{stock_data['PBR']:.2f}")
+    with col4:
         st.metric("시가총액", f"{stock_data['시가총액(단위:백만원)']:,.0f}백만원")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("배당수익률", f"{stock_data['배당수익률']:.2f}%")
+    with col2:
+        st.metric("배당성향", f"{stock_data['배당성향']:.2f}%")
+    with col3:
+        st.metric("ROE", f"{stock_data['ROE']:.2f}%")
     with col4:
         st.metric("섹터", stock_data['섹터'])
     
@@ -326,6 +491,40 @@ with tabs[2]:  # 개별 종목 분석
             name='ROE'
         ))
         fig.update_layout(**get_chart_layout("ROE 추이"))
+        st.plotly_chart(fig, use_container_width=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # PER 추이
+        per_data = []
+        for col in year_columns['PER']:
+            try:
+                per_data.append(stock_data[col])
+            except KeyError:
+                per_data.append(None)  # 데이터가 없는 경우 None 추가
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=per_data,
+            mode='lines+markers',
+            name='PER'
+        ))
+        fig.update_layout(**get_chart_layout("PER 추이"))
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # 배당수익률 추이
+        dividend_data = [stock_data[col] for col in year_columns['배당수익률']]
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=dividend_data,
+            mode='lines+markers',
+            name='배당수익률'
+        ))
+        fig.update_layout(**get_chart_layout("배당수익률 추이"))
         st.plotly_chart(fig, use_container_width=True)
     
     # 동종 업계 비교
@@ -366,7 +565,26 @@ with tabs[2]:  # 개별 종목 분석
         )
         fig.update_layout(get_chart_layout())
         st.plotly_chart(fig, use_container_width=True)
-# 이전 코드에 이어서...
+
+    st.markdown(f"""
+    ### {selected_stock} 종목 분석 요약
+    
+    - **현재 주가**: {stock_data['종가']:,.0f}원
+    - **PER**: {stock_data['PER']:.2f} (업종 평균: {same_sector['PER'].mean():.2f})
+    - **PBR**: {stock_data['PBR']:.2f} (업종 평균: {same_sector['PBR'].mean():.2f})
+    - **ROE**: {stock_data['ROE']:.2f}% (업종 평균: {same_sector['ROE'].mean():.2f}%)
+    - **배당수익률**: {stock_data['배당수익률']:.2f}% (업종 평균: {same_sector['배당수익률'].mean():.2f}%)
+    - **배당성향**: {stock_data['배당성향']:.2f}% (업종 평균: {same_sector['배당성향'].mean():.2f}%)
+    
+    {selected_stock}은(는) 동종 업계 대비 {'높은' if stock_data['PER'] > same_sector['PER'].mean() else '낮은'} PER, 
+    {'높은' if stock_data['PBR'] > same_sector['PBR'].mean() else '낮은'} PBR, 
+    {'높은' if stock_data['ROE'] > same_sector['ROE'].mean() else '낮은'} ROE를 보이고 있습니다. 
+    배당 측면에서는 {'높은' if stock_data['배당수익률'] > same_sector['배당수익률'].mean() else '낮은'} 배당수익률과 
+    {'높은' if stock_data['배당성향'] > same_sector['배당성향'].mean() else '낮은'} 배당성향을 나타내고 있습니다.
+    
+    최근 3년간의 추이를 볼 때, PBR과 ROE는 {'상승' if pbr_data[0] > pbr_data[-1] and roe_data[0] > roe_data[-1] else '하락'} 추세를 보이고 있으며, 
+    배당수익률은 {'증가' if dividend_data[0] > dividend_data[-1] else '감소'}하고 있습니다.
+    """)
 
 with tabs[3]:  # 배당 분석
     st.subheader("배당 분석")
@@ -382,6 +600,41 @@ with tabs[3]:  # 배당 분석
     with col4:
         st.metric("평균 배당성향", f"{df['배당성향'].mean():.2f}%")
     
+    # 섹터별 배당률과 배당성향 히트맵 추가
+    st.subheader("섹터별 배당률과 배당성향 히트맵")
+
+    # 섹터별 평균 배당률과 배당성향 계산
+    sector_dividend = df.groupby('섹터')[['배당수익률', '배당성향']].mean().reset_index()
+
+    # 히트맵 생성
+    fig = px.imshow(sector_dividend[['배당수익률', '배당성향']],
+                    labels=dict(x="지표", y="섹터", color="값"),
+                    x=['배당수익률', '배당성향'],
+                    y=sector_dividend['섹터'],
+                    color_continuous_scale="YlOrRd",
+                    aspect="auto")
+
+    # 셀에 값 표시
+    fig.update_traces(text=sector_dividend[['배당수익률', '배당성향']].values.round(2), texttemplate="%{text}")
+    fig.update_layout(
+        title="섹터별 평균 배당률과 배당성향",
+        xaxis_title="",
+        yaxis_title="",
+        height=600,
+        width=800,
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""
+    이 히트맵은 각 섹터의 평균 배당률과 배당성향을 보여줍니다:
+    - 배당률: 주가 대비 1주당 배당금의 비율을 나타냅니다. 높을수록 현재 주가 대비 배당금이 많다는 의미입니다.
+    - 배당성향: 순이익 대비 배당금 지급 비율을 나타냅니다. 높을수록 기업이 이익의 더 많은 부분을 배당으로 지급한다는 의미입니다.
+    
+    색상이 진할수록 해당 값이 높음을 나타냅니다. 이를 통해 어떤 섹터가 배당 투자에 적합한지 파악할 수 있습니다.
+    """)
+
+    # 기존의 배당 분석 코드 계속...
     col1, col2 = st.columns(2)
     
     with col1:
@@ -430,12 +683,52 @@ with tabs[3]:  # 배당 분석
         x='종목명',
         y='배당수익률',
         color='섹터',
-        title="상위 10개 고배당 기업",
+        title="상위 10 고배당 기업",
         text='배당수익률'
     )
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(get_chart_layout())
     st.plotly_chart(fig, use_container_width=True)
+
+    # 배당 워드클라우드 추가
+    st.subheader("전체 기업 배당 워드클라우드")
+
+    # 배당수익률이 있는 기업만 선택
+    dividend_companies = df[df['배당수익률'] > 0]
+
+    # 워드클라우드용 데이터 생성
+    word_freq = {row['종목명']: row['배당수익률'] for _, row in dividend_companies.iterrows()}
+
+    # 서버에 설치된 한글 폰트 찾기
+    font_path = None
+    for font in fm.findSystemFonts():
+        if 'gothic' in font.lower() or 'gulim' in font.lower():
+            font_path = font
+            break
+
+    if font_path is None:
+        st.error("적절한 한글 폰트를 찾을 수 없습니다. 서버에 한글 폰트를 설치해 주세요.")
+    else:
+        # 워드클라우드 생성
+        wordcloud = WordCloud(
+            font_path=font_path,
+            width=800, 
+            height=400, 
+            background_color='white',
+            colormap='viridis'
+        ).generate_from_frequencies(word_freq)
+
+        # 워드클라우드 표시
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis('off')
+        st.pyplot(fig)
+
+        st.markdown("""
+        이 워드클라우드는 배당을 지급하는 모든 기업을 보여줍니다. 
+        글자의 크기는 배당수익률에 비례하며, 배당수익률이 높을수록 더 크게 표시됩니다.
+        이를 통해 전체 시장에서 어떤 기업들이 높은 배당을 제공하는지 한눈에 파악할 수 있습니다.
+        """)
 
 with tabs[4]:  # 연도별 추이
     st.subheader("연도별 지표 추이 분석")
@@ -509,7 +802,7 @@ with tabs[5]:  # 투자 기회
     df['가치투자_점수'] = (df['PBR_rank'] + df['ROE_rank'] + df['시가총액_rank']) / 3
     
     # 상위 가치투자 기회
-    top_value = df.nlargest(20, '가치투자_점수')
+    top_value = df.nlargest(100, '가치투자_점수')
     
     fig = px.scatter(
         top_value,
@@ -518,24 +811,26 @@ with tabs[5]:  # 투자 기회
         size='시가총액(단위:백만원)',
         color='섹터',
         hover_name='종목명',
-        title="Top 20 가치투자 기회"
+        title=" 가치투자 기회"
     )
     fig.update_layout(get_chart_layout())
     st.plotly_chart(fig, use_container_width=True)
     
     # 투자 기회 목록
     st.dataframe(
-        top_value[['종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '가치투자_점수', '섹터']]
+        top_value[['종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '가치투자_점수', '섹터','배당수익률','배당성향']]
         .sort_values('가치투자_점수', ascending=False)
         .style.format({
             'PBR': '{:.2f}',
             'ROE': '{:.2f}%',
             '시가총액(단위:백만원)': '{:,.0f}',
-            '가치투자_점수': '{:.0f}'
+            '가치투자_점수': '{:.0f}',
+            '배당수익률': '{:.2f}%',
+            '배당성향': '{:.2f}%',
         })
     )
 
-# 투자 전략 결론
+# 자 전략 결론
 st.markdown("---")
 st.markdown(f"""
 ## 💡 투자 전략 제안
@@ -559,3 +854,22 @@ st.markdown(f"""
    - 최근 실적 개선 섹터 중심 투자
    - 저평가 업종 내 우량기업 발굴
 """)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
