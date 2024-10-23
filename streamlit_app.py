@@ -254,7 +254,7 @@ with tabs[0]:  # 시장 개요
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("이 히스토그램은 기업들의 시가총액 분포를 보여줍니다. 대부분의 기업이 어느 범위의 시가총액을 가지고 있는지, 극단적으로 큰 시가총액을 가진 기업은 얼마나 있는지 파악할 수 있습니다.")
     # 배당률 높은 기업 트리맵 추가
-    st.subheader("ROE TOP50 기업 트리맵")
+    st.subheader("ROE 상위 50 기업 트리맵")
     
     # ROE 상위 50개 기업 선택
     top_roe_companies = df.nlargest(50, 'ROE').copy()
@@ -298,6 +298,7 @@ with tabs[0]:  # 시장 개요
         font=dict(family="Malgun Gothic", size=14),
         margin=dict(t=30, l=10, r=10, b=10),
         title={
+            text:' ',
             'y':0.98,
             'x':0.5,
             'xanchor': 'center',
