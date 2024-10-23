@@ -821,7 +821,7 @@ with tabs[5]:  # 투자 기회
         x='PBR',
         y='ROE',
         size='marker_size',  # 마커 크기를 조정된 값으로 설정
-        size_max=60,  # 최대 마커 크기 증가
+        size_max=30,  # 최대 마커 크기 증가
         color='섹터',
         hover_name='종목명',
         title="가치투자 기회"
@@ -909,13 +909,6 @@ with tabs[5]:  # 투자 기회
     
     # Streamlit에서 차트 표시
     st.plotly_chart(fig, use_container_width=True)
-    
-    # 데이터 테이블도 함께 표시
-    st.write("### 상위 가치투자 기회 목록")
-    st.dataframe(
-        top_value[['종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '섹터']]
-        .sort_values('가치투자_점수', ascending=False)
-    )
     
     # 투자 기회 목록
     st.dataframe(
