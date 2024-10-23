@@ -135,34 +135,74 @@ def get_chart_layout(title=""):
 # 메인 타이틀
 st.title('코리안벨류업 종목 분석 대시보드')
 
-# KPI 섹션 생성
+# KPI 섹션 스타일 
 st.markdown("""
+<style>
+    .kpi-container {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        margin: 1rem 0;
+    }
+    .kpi-card {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin: 10px;
+        flex: 1;
+        min-width: 200px;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+    }
+    .kpi-title {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    .kpi-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    .kpi-icon {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# KPI 데이터를 HTML로 표시
+kpi_html = f"""
 <div class="kpi-container">
     <div class="kpi-card">
         <div class="kpi-icon">💰</div>
         <div class="kpi-title">총 시가총액</div>
-        <div class="kpi-value">{:,.2f}조원</div>
+        <div class="kpi-value">{total_market_cap:,.2f}조원</div>
     </div>
-    
     <div class="kpi-card">
         <div class="kpi-icon">📊</div>
         <div class="kpi-title">평균 PBR</div>
-        <div class="kpi-value">{:.2f}</div>
+        <div class="kpi-value">{avg_pbr:.2f}</div>
     </div>
-    
     <div class="kpi-card">
         <div class="kpi-icon">📈</div>
         <div class="kpi-title">평균 ROE</div>
-        <div class="kpi-value">{:.2f}%</div>
+        <div class="kpi-value">{avg_roe:.2f}%</div>
     </div>
-    
     <div class="kpi-card">
         <div class="kpi-icon">🔄</div>
         <div class="kpi-title">시장 모멘텀</div>
-        <div class="kpi-value">{:.2f}%</div>
+        <div class="kpi-value">{market_momentum:.2f}%</div>
     </div>
 </div>
-""".format(total_market_cap, avg_pbr, avg_roe, market_momentum), unsafe_allow_html=True)
+"""
+
+# HTML 표시
+st.markdown(kpi_html, unsafe_allow_html=True)
 
 # 데이터 로드 및 기본 계산
 with st.spinner('데이터를 분석중입니다...'):
