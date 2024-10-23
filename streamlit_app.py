@@ -812,12 +812,16 @@ with tabs[5]:  # 투자 기회
     # 상위 가치투자 기회
     top_value = df.nlargest(100, '가치투자_점수')
     
+    # 시가총액 로그 스케일로 변환하여 마커 크기 조정
+    top_value['marker_size'] = np.log10(top_value['시가총액(단위:백만원)']) * 20
+    
     # 그래프 생성
     fig = px.scatter(
         top_value,
         x='PBR',
         y='ROE',
-        size='시가총액(단위:백만원)',
+        size='marker_size',  # 마커 크기를 조정된 값으로 설정
+        size_max=60,  # 최대 마커 크기 증가
         color='섹터',
         hover_name='종목명',
         title="가치투자 기회"
@@ -825,9 +829,14 @@ with tabs[5]:  # 투자 기회
     
     # 레이아웃 설정 업데이트
     fig.update_layout(
-        # 전체 차트 크기 설정
-        height=800,  # 높이를 800픽셀로 설정
-        width=1000,  # 너비를 1000픽셀로 설정
+        height=800,
+        width=1000,
+        
+        # 확대/축소 기능 활성화
+        dragmode='zoom',  # 드래그로 확대 가능
+        
+        # 마커 설정
+        showlegend=True,
         
         # 여백 설정
         margin=dict(l=50, r=50, t=80, b=50),
@@ -856,7 +865,8 @@ with tabs[5]:  # 투자 기회
             gridcolor='lightgray',
             zeroline=True,
             zerolinewidth=1,
-            zerolinecolor='lightgray'
+            zerolinecolor='lightgray',
+            range=[0, top_value['PBR'].quantile(0.95)]  # PBR 축 범위 조정
         ),
         yaxis=dict(
             showgrid=True,
@@ -864,12 +874,48 @@ with tabs[5]:  # 투자 기회
             gridcolor='lightgray',
             zeroline=True,
             zerolinewidth=1,
-            zerolinecolor='lightgray'
+            zerolinecolor='lightgray',
+            range=[0, top_value['ROE'].quantile(0.95)]  # ROE 축 범위 조정
         )
+    )
+    
+    # 마커 스타일 업데이트
+    fig.update_traces(
+        marker=dict(
+            opacity=0.7,  # 투명도 설정
+            line=dict(width=1, color='DarkSlateGrey')  # 마커 테두리 설정
+        )
+    )
+    
+    # 차트에 확대/축소 버튼 추가
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                showactive=False,
+                buttons=[
+                    dict(
+                        label="Reset Zoom",
+                        method="relayout",
+                        args=[{"xaxis.range": [None, None],
+                              "yaxis.range": [None, None]}]
+                    )
+                ],
+                x=0.05,
+                y=1.1,
+            )
+        ]
     )
     
     # Streamlit에서 차트 표시
     st.plotly_chart(fig, use_container_width=True)
+    
+    # 데이터 테이블도 함께 표시
+    st.write("### 상위 가치투자 기회 목록")
+    st.dataframe(
+        top_value[['종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '섹터']]
+        .sort_values('가치투자_점수', ascending=False)
+    )
     
     # 투자 기회 목록
     st.dataframe(
