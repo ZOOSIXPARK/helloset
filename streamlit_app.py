@@ -298,7 +298,7 @@ with tabs[0]:  # 시장 개요
         font=dict(family="Malgun Gothic", size=14),
         margin=dict(t=30, l=10, r=10, b=10),
         title={
-            text:' ',
+            'text':' ',
             'y':0.98,
             'x':0.5,
             'xanchor': 'center',
