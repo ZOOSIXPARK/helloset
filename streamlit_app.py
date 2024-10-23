@@ -827,7 +827,35 @@ with tabs[5]:  # 투자 기회
             hover_name='종목명',
             title="가치투자 기회"
         )
-        fig.update_layout(get_chart_layout())
+        
+        # 레이아웃 업데이트
+        fig.update_layout(
+            height=600,
+            width=800,
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=1.05,
+                bgcolor="white",
+                bordercolor="LightGrey",
+                borderwidth=1
+            ),
+            margin=dict(l=50, r=150, t=50, b=50),  # 오른쪽 여백 늘림
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            xaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='lightgray'
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='lightgray'
+            )
+        )
+        
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
