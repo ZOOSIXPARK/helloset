@@ -812,6 +812,7 @@ with tabs[5]:  # 투자 기회
     # 상위 가치투자 기회
     top_value = df.nlargest(100, '가치투자_점수')
     
+    # 그래프 생성
     fig = px.scatter(
         top_value,
         x='PBR',
@@ -819,9 +820,55 @@ with tabs[5]:  # 투자 기회
         size='시가총액(단위:백만원)',
         color='섹터',
         hover_name='종목명',
-        title=" 가치투자 기회"
+        title="가치투자 기회"
     )
-    fig.update_layout(get_chart_layout())
+    
+    # 레이아웃 설정 업데이트
+    fig.update_layout(
+        # 전체 차트 크기 설정
+        height=800,  # 높이를 800픽셀로 설정
+        width=1000,  # 너비를 1000픽셀로 설정
+        
+        # 여백 설정
+        margin=dict(l=50, r=50, t=80, b=50),
+        
+        # 글꼴 크기 조정
+        title_font_size=24,
+        font=dict(size=14),
+        
+        # 범례 설정
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=1.02,
+            font=dict(size=12)
+        ),
+        
+        # 플롯 배경 설정
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        
+        # 그리드 설정
+        xaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinewidth=1,
+            zerolinecolor='lightgray'
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinewidth=1,
+            zerolinecolor='lightgray'
+        )
+    )
+    
+    # Streamlit에서 차트 표시
     st.plotly_chart(fig, use_container_width=True)
     
     # 투자 기회 목록
