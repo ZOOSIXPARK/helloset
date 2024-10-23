@@ -807,10 +807,10 @@ with tabs[5]:  # 투자 기회
     df['PBR_rank'] = df['PBR'].rank(ascending=True)
     df['ROE_rank'] = df['ROE'].rank(ascending=False)
     df['시가총액_rank'] = df['시가총액(단위:백만원)'].rank(ascending=False)
-    df['가치투자_점수'] = (df['PBR_rank'] + df['ROE_rank'] + df['시가총액_rank']) / 3
+    df['가치투자점수'] = (df['PBR_rank'] + df['ROE_rank'] + df['시가총액_rank']) / 3
     
     # 상위 가치투자 기회
-    top_value = df.nlargest(100, '가치투자_점수')
+    top_value = df.nlargest(100, '가치투자점수')
     
     # 두 개의 컬럼으로 나누기
     col1, col2 = st.columns([1, 1])
@@ -861,13 +861,13 @@ with tabs[5]:  # 투자 기회
     with col2:
         # 투자 기회 목록
         st.dataframe(
-            top_value[['종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '가치투자_점수', '섹터','배당수익률','배당성향']]
-            .sort_values('가치투자_점수', ascending=False)
+            top_value[['가치투자점수','종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '섹터','배당수익률','배당성향']]
+            .sort_values('가치투자점수', ascending=False)
             .style.format({
                 'PBR': '{:.2f}',
                 'ROE': '{:.2f}%',
                 '시가총액(단위:백만원)': '{:,.0f}',
-                '가치투자_점수': '{:.0f}',
+                '가치투자점수': '{:.0f}',
                 '배당수익률': '{:.2f}%',
                 '배당성향': '{:.2f}%',
             })
