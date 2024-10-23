@@ -702,11 +702,11 @@ with tabs[3]:  # 배당 분석
     word_freq = {row['종목명']: row['배당수익률'] for _, row in dividend_companies.iterrows()}
 
     # 서버에 설치된 한글 폰트 찾기
-    font_path = None
-    for font in fm.findSystemFonts():
-        if 'gothic' in font.lower() or 'gulim' in font.lower():
-            font_path = font
-            break
+    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'NanumGothic.ttf')
+    #for font in fm.findSystemFonts():
+    #    if 'gothic' in font.lower() or 'gulim' in font.lower():
+    #        font_path = font
+    #        break
 
     if font_path is None:
         st.error("적절한 한글 폰트를 찾을 수 없습니다. 서버에 한글 폰트를 설치해 주세요.")
