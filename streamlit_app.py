@@ -812,102 +812,16 @@ with tabs[5]:  # 투자 기회
     # 상위 가치투자 기회
     top_value = df.nlargest(100, '가치투자_점수')
     
-    # 시가총액 로그 스케일로 변환하여 마커 크기 조정
-    top_value['marker_size'] = np.log10(top_value['시가총액(단위:백만원)']) * 20
-    
-    # 그래프 생성
     fig = px.scatter(
         top_value,
         x='PBR',
         y='ROE',
-        size='marker_size',  # 마커 크기를 조정된 값으로 설정
-        size_max=30,  # 최대 마커 크기 증가
+        size='시가총액(단위:백만원)',
         color='섹터',
         hover_name='종목명',
-        title="가치투자 기회"
+        title=" 가치투자 기회"
     )
-    
-    # 레이아웃 설정 업데이트
-    fig.update_layout(
-        height=800,
-        width=1000,
-        
-        # 확대/축소 기능 활성화
-        dragmode='zoom',  # 드래그로 확대 가능
-        
-        # 마커 설정
-        showlegend=True,
-        
-        # 여백 설정
-        margin=dict(l=50, r=50, t=80, b=50),
-        
-        # 글꼴 크기 조정
-        title_font_size=24,
-        font=dict(size=14),
-        
-        # 범례 설정
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=1.02,
-            font=dict(size=12)
-        ),
-        
-        # 플롯 배경 설정
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        
-        # 그리드 설정
-        xaxis=dict(
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='lightgray',
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor='lightgray',
-            range=[0, top_value['PBR'].quantile(0.95)]  # PBR 축 범위 조정
-        ),
-        yaxis=dict(
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='lightgray',
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor='lightgray',
-            range=[0, top_value['ROE'].quantile(0.95)]  # ROE 축 범위 조정
-        )
-    )
-    
-    # 마커 스타일 업데이트
-    fig.update_traces(
-        marker=dict(
-            opacity=0.7,  # 투명도 설정
-            line=dict(width=1, color='DarkSlateGrey')  # 마커 테두리 설정
-        )
-    )
-    
-    # 차트에 확대/축소 버튼 추가
-    fig.update_layout(
-        updatemenus=[
-            dict(
-                type="buttons",
-                showactive=False,
-                buttons=[
-                    dict(
-                        label="Reset Zoom",
-                        method="relayout",
-                        args=[{"xaxis.range": [None, None],
-                              "yaxis.range": [None, None]}]
-                    )
-                ],
-                x=0.05,
-                y=1.1,
-            )
-        ]
-    )
-    
-    # Streamlit에서 차트 표시
+    fig.update_layout(get_chart_layout())
     st.plotly_chart(fig, use_container_width=True)
     
     # 투자 기회 목록
