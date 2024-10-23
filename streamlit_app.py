@@ -133,7 +133,7 @@ def get_chart_layout(title=""):
     }
 
 # 메인 타이틀
-st.markdown('<h1 class="main-header">📊 코리안벨류업 종목 분석 대시보드</h1>', unsafe_allow_html=True)
+st.title('코리안벨류업 종목 분석 대시보드')
 
 # 데이터 로드 및 기본 계산
 with st.spinner('데이터를 분석중입니다...'):
