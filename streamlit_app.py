@@ -221,161 +221,173 @@ with tabs[0]:  # 시장 개요
     
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("이 차트는 시가총액 기준 상위 5개 섹터의 비중을 보여줍니다. 각 섹터가 전체 시장에서 차지하는 비율을 한눈에 파악할 수 있습니다.")
-with col2:
-    # 시가총액을 10억원 단위로 변환 (기존 단위: 백만원)
-    df['시가총액_10억'] = df['시가총액(단위:백만원)'] / 1000
-    df['시가총액_log'] = np.log10(df['시가총액_10억'])
+    with col2:
+        # 시가총액을 10억원 단위로 변환 (기존 단위: 백만원)
+        df['시가총액_10억'] = df['시가총액(단위:백만원)'] / 1000
+        df['시가총액_log'] = np.log10(df['시가총액_10억'])
+        
+        # 히스토그램 생성
+        fig = px.histogram(
+            df,
+            x='시가총액_log',
+            nbins=30,
+            title='기업 시가총액 분포 (로그 스케일)',
+            color_discrete_sequence=['#2E86C1']
+        )
+        
+        # x축 눈금 설정 (로그 스케일을 실제 값으로 변환)
+        tick_vals = list(range(int(df['시가총액_log'].min()), int(df['시가총액_log'].max()) + 1))
+        tick_text = [f'{10**x:,.0f}억원' for x in tick_vals]
+        
+        fig.update_layout(
+            title={
+                'text': "기업 시가총액 분포",
+                'y': 0.95,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {'size': 20, 'color': '#2C3E50'}
+            },
+            yaxis=dict(
+                title="기업 수",
+                titlefont=dict(size=14, color='#2C3E50'),
+                tickfont=dict(size=12),
+                gridcolor='lightgray',
+                gridwidth=0.5
+            ),
+            xaxis=dict(
+                title="시가총액",
+                titlefont=dict(size=14, color='#2C3E50'),
+                tickfont=dict(size=12),
+                ticktext=tick_text,
+                tickvals=tick_vals,
+                gridcolor='lightgray',
+                gridwidth=0.5
+            ),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            bargap=0.1,
+            showlegend=False
+        )
+        
+        # 테두리 추가
+        fig.update_traces(
+            marker_line_width=1,
+            marker_line_color="white",
+            opacity=0.8
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # 분포 설명 추가
+        med_cap = df['시가총액_10억'].median()
+        max_cap = df['시가총액_10억'].max()
+        
+        st.markdown(f"""
+        ### 시가총액 분포 특징
+        - **중앙값**: {med_cap:,.0f}억원
+        - **최대 시가총액**: {max_cap:,.0f}억원
+        - **분포 특성**: 대부분의 기업이 중소형 규모에 집중되어 있으며, 소수의 대형주가 존재하는 긴 꼬리 분포를 보입니다.
+        """)
+    # 배당률 높은 기업 트리맵 추가
+    st.subheader("ROE 상위 50 기업 트리맵")
     
-    # 히스토그램 생성
-    fig = px.histogram(
-        df,
-        x='시가총액_log',
-        nbins=30,
-        title='기업 시가총액 분포 (로그 스케일)',
-        color_discrete_sequence=['#2E86C1']
+    # ROE 상위 50개 기업 선택
+    top_roe_companies = df.nlargest(50, 'ROE').copy()
+    
+    # 배당수익률에 따른 색상 범위 설정
+    min_dividend = top_roe_companies['배당수익률'].min()
+    max_dividend = top_roe_companies['배당수익률'].max()
+
+    # 트리맵 생성
+    fig = px.treemap(
+        top_roe_companies,
+        path=['종목명'],
+        values='ROE',
+        color='배당수익률',
+        hover_data=['ROE', '배당수익률', 'PBR', '시가총액(단위:백만원)'],
+        color_continuous_scale='YlOrRd',  # 노랑-주황-빨강 색상 스키마
+        range_color=[min_dividend, max_dividend]
     )
-    
-    # x축 눈금 설정 (로그 스케일을 실제 값으로 변환)
-    tick_vals = list(range(int(df['시가총액_log'].min()), int(df['시가총액_log'].max()) + 1))
-    tick_text = [f'{10**x:,.0f}억원' for x in tick_vals]
-    
+
+    fig.update_traces(
+        textinfo="label+value",
+        textfont=dict(size=12, color='black'),
+        hovertemplate='<b>%{label}</b><br>' +
+                      'ROE: %{value:.2f}%<br>' +
+                      '배당수익률: %{customdata[1]:.2f}%<br>' +
+                      'PBR: %{customdata[2]:.2f}<br>' +
+                      '시가총액: %{customdata[3]:,.0f}백만원'
+    )
+
     fig.update_layout(
+        height=700,
+        coloraxis_colorbar=dict(
+            title="배당수익률 (%)",
+            tickformat=".2f",
+            len=0.5,  # 컬러바 길이 조정
+            yanchor="top",  # 컬러바 위치 조정
+            y=1,
+            xanchor="left",
+            x=1.02
+        ),
+        font=dict(family="Malgun Gothic", size=14),
+        margin=dict(t=30, l=10, r=10, b=10),
         title={
-            'text': "기업 시가총액 분포",
-            'y': 0.95,
-            'x': 0.5,
+            'text':' ',
+            'y':0.98,
+            'x':0.5,
             'xanchor': 'center',
             'yanchor': 'top',
-            'font': {'size': 20, 'color': '#2C3E50'}
-        },
-        yaxis=dict(
-            title="기업 수",
-            titlefont=dict(size=14, color='#2C3E50'),
-            tickfont=dict(size=12),
-            gridcolor='lightgray',
-            gridwidth=0.5
-        ),
-        xaxis=dict(
-            title="시가총액",
-            titlefont=dict(size=14, color='#2C3E50'),
-            tickfont=dict(size=12),
-            ticktext=tick_text,
-            tickvals=tick_vals,
-            gridcolor='lightgray',
-            gridwidth=0.5
-        ),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        bargap=0.1,
-        showlegend=False
+            'font': {'size': 24}
+        }
     )
-    
-    # 테두리 추가
-    fig.update_traces(
-        marker_line_width=1,
-        marker_line_color="white",
-        opacity=0.8
-    )
-    
+
     st.plotly_chart(fig, use_container_width=True)
-    
-    # 분포 설명 추가
-    med_cap = df['시가총액_10억'].median()
-    max_cap = df['시가총액_10억'].max()
-    
-    st.markdown(f"""
-    ### 시가총액 분포 특징
-    - **중앙값**: {med_cap:,.0f}억원
-    - **최대 시가총액**: {max_cap:,.0f}억원
-    - **분포 특성**: 대부분의 기업이 중소형 규모에 집중되어 있으며, 소수의 대형주가 존재하는 긴 꼬리 분포를 보입니다.
+
+    st.markdown("""
+    **ROE 상위 50개 기업을 시각화한 트리맵입니다.**
+    - 사각형의 크기: ROE 값
+    - 색상: 배당수익률 (짙은 빨강일수록 높은 배당수익률)
+    - 텍스트: 기업명과 ROE 값
+    - 호버 보: ROE, 배당수익률, PBR, 시가총액
+
+    이 시각화를 통해 ROE가 높은 기업들 중에서 배당수익률이 어떻게 분포되어 있는지,
+    그리고 각 기업의 주요 지표들을 한눈에 파악할 수 있습니다.
     """)
-# 배당률 높은 기업 트리맵 추가
-st.subheader("ROE 상위 50 기업 트리맵")
 
-# ROE 상위 50개 기업 선택
-top_roe_companies = df.nlargest(50, 'ROE').copy()
+    st.subheader("섹터별 배당률과 배당성향 히트맵")
 
-# 배당수익률에 따른 색상 범위 설정
-min_dividend = top_roe_companies['배당수익률'].min()
-max_dividend = top_roe_companies['배당수익률'].max()
-# 트리맵 생성
-fig = px.treemap(
-    top_roe_companies,
-    path=['종목명'],
-    values='ROE',
-    color='배당수익률',
-    hover_data=['ROE', '배당수익률', 'PBR', '시가총액(단위:백만원)'],
-    color_continuous_scale='YlOrRd',  # 노랑-주황-빨강 색상 스키마
-    range_color=[min_dividend, max_dividend]
-)
-fig.update_traces(
-    textinfo="label+value",
-    textfont=dict(size=12, color='black'),
-    hovertemplate='<b>%{label}</b><br>' +
-                  'ROE: %{value:.2f}%<br>' +
-                  '배당수익률: %{customdata[1]:.2f}%<br>' +
-                  'PBR: %{customdata[2]:.2f}<br>' +
-                  '시가총액: %{customdata[3]:,.0f}백만원'
-)
-fig.update_layout(
-    height=700,
-    coloraxis_colorbar=dict(
-        title="배당수익률 (%)",
-        tickformat=".2f",
-        len=0.5,  # 컬러바 길이 조정
-        yanchor="top",  # 컬러바 위치 조정
-        y=1,
-        xanchor="left",
-        x=1.02
-    ),
-    font=dict(family="Malgun Gothic", size=14),
-    margin=dict(t=30, l=10, r=10, b=10),
-    title={
-        'text':' ',
-        'y':0.98,
-        'x':0.5,
-        'xanchor': 'center',
-        'yanchor': 'top',
-        'font': {'size': 24}
-    }
-)
-st.plotly_chart(fig, use_container_width=True)
-st.markdown("""
-**ROE 상위 50개 기업을 시각화한 트리맵입니다.**
-- 사각형의 크기: ROE 값
-- 색상: 배당수익률 (짙은 빨강일수록 높은 배당수익률)
-- 텍스트: 기업명과 ROE 값
-- 호버 보: ROE, 배당수익률, PBR, 시가총액
-이 시각화를 통해 ROE가 높은 기업들 중에서 배당수익률이 어떻게 분포되어 있는지,
-그리고 각 기업의 주요 지표들을 한눈에 파악할 수 있습니다.
-""")
-st.subheader("섹터별 배당률과 배당성향 히트맵")
-# 섹터별 평균 배당률과 배당성향 계산
-sector_dividend = df.groupby('섹터')[['배당수익률', '배당성향']].mean().reset_index()
-# 히트맵 생성
-fig = px.imshow(sector_dividend[['배당수익률', '배당성향']],
-                labels=dict(x="지표", y="섹터", color="값"),
-                x=['배당수익률', '배당성향'],
-                y=sector_dividend['섹터'],
-                color_continuous_scale="YlOrRd",
-                aspect="auto")
-# 셀에 값 표시
-fig.update_traces(text=sector_dividend[['배당수익률', '배당성향']].values.round(2), texttemplate="%{text}")
-fig.update_layout(
-    title="섹터별 평균 배당률과 배당성향",
-    xaxis_title="",
-    yaxis_title="",
-    height=600,
-    width=800,
-)
-st.plotly_chart(fig, use_container_width=True)
-st.markdown("""
-이 히트맵은 각 섹터의 평균 배당률과 배당성향을 보여줍니다:
-- 배당률: 주가 대비 1주당 배당금의 비율을 나타냅니다. 높을수록 현재 주가 대비 배당금이 많다는 의미입니다.
-- 배당성향: 순이익 대비 배당금 지급 비율을 나타냅니다. 높을수록 기업이 이익의 더 많은 부분을 배당으로 지급한다는 의미입니다.
+    # 섹터별 평균 배당률과 배당성향 계산
+    sector_dividend = df.groupby('섹터')[['배당수익률', '배당성향']].mean().reset_index()
 
-색상이 진할수록 해당 값이 높음을 나타냅니다. 이를 통해 어떤 섹터가 배당 투자에 적합한지 파악할 수 있습니다.
-""")
+    # 히트맵 생성
+    fig = px.imshow(sector_dividend[['배당수익률', '배당성향']],
+                    labels=dict(x="지표", y="섹터", color="값"),
+                    x=['배당수익률', '배당성향'],
+                    y=sector_dividend['섹터'],
+                    color_continuous_scale="YlOrRd",
+                    aspect="auto")
+
+    # 셀에 값 표시
+    fig.update_traces(text=sector_dividend[['배당수익률', '배당성향']].values.round(2), texttemplate="%{text}")
+    fig.update_layout(
+        title="섹터별 평균 배당률과 배당성향",
+        xaxis_title="",
+        yaxis_title="",
+        height=600,
+        width=800,
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""
+    이 히트맵은 각 섹터의 평균 배당률과 배당성향을 보여줍니다:
+    - 배당률: 주가 대비 1주당 배당금의 비율을 나타냅니다. 높을수록 현재 주가 대비 배당금이 많다는 의미입니다.
+    - 배당성향: 순이익 대비 배당금 지급 비율을 나타냅니다. 높을수록 기업이 이익의 더 많은 부분을 배당으로 지급한다는 의미입니다.
+    
+    색상이 진할수록 해당 값이 높음을 나타냅니다. 이를 통해 어떤 섹터가 배당 투자에 적합한지 파악할 수 있습니다.
+    """)
 
 with tabs[1]:  # 섹터 분석
     st.subheader("섹터별 분석")
