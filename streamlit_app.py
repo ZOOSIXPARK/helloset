@@ -817,7 +817,7 @@ with tabs[5]:  # 투자 기회
         x='PBR',
         y='ROE',
         size='시가총액(단위:백만원)',
-        size_max=20,  # 데이터 포인트의 최대 크기를 50으로 설정
+        size_max=50,  # 데이터 포인트의 최대 크기를 50으로 설정
         color='섹터',
         hover_name='종목명',
         title=" 가치투자 기회"
