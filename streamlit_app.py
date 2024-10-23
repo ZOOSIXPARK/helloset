@@ -135,6 +135,9 @@ def get_chart_layout(title=""):
 # 메인 타이틀
 st.title('코리안벨류업 종목 분석 대시보드')
 
+# 먼저 컬럼 변수들을 정의
+col1, col2, col3, col4 = st.columns(4)
+
 # KPI 섹션 스타일 
 st.markdown("""
 <style>
@@ -175,34 +178,42 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# KPI 데이터를 HTML로 표시
-kpi_html = f"""
-<div class="kpi-container">
+# 각 컬럼에 KPI 카드 생성
+with col1:
+    st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-icon">💰</div>
         <div class="kpi-title">총 시가총액</div>
         <div class="kpi-value">{total_market_cap:,.2f}조원</div>
     </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-icon">📊</div>
         <div class="kpi-title">평균 PBR</div>
         <div class="kpi-value">{avg_pbr:.2f}</div>
     </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-icon">📈</div>
         <div class="kpi-title">평균 ROE</div>
         <div class="kpi-value">{avg_roe:.2f}%</div>
     </div>
+    """, unsafe_allow_html=True)
+
+with col4:
+    st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-icon">🔄</div>
         <div class="kpi-title">시장 모멘텀</div>
         <div class="kpi-value">{market_momentum:.2f}%</div>
     </div>
-</div>
-"""
-
-# HTML 표시
-st.markdown(kpi_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # 데이터 로드 및 기본 계산
 with st.spinner('데이터를 분석중입니다...'):
