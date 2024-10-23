@@ -703,7 +703,8 @@ with tabs[3]:  # 배당 분석
     word_freq = {row['종목명']: row['배당수익률'] for _, row in dividend_companies.iterrows()}
 
     # 서버에 설치된 한글 폰트 찾기
-    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'NanumGothic.ttf')
+    #font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'NanumGothic.ttf')
+    font_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts', 'NanumGothic.ttf')
     #for font in fm.findSystemFonts():
     #    if 'gothic' in font.lower() or 'gulim' in font.lower():
     #        font_path = font
