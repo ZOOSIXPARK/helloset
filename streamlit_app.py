@@ -812,90 +812,32 @@ with tabs[5]:  # 투자 기회
     # 상위 가치투자 기회
     top_value = df.nlargest(100, '가치투자_점수')
     
-    # 새로운 시각화 추가
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        # 섹터별 평균 ROE vs 평균 PBR 버블차트
-        sector_avg = top_value.groupby('섹터').agg({
-            'ROE': 'mean',
-            'PBR': 'mean',
-            '시가총액(단위:백만원)': 'sum'
-        }).reset_index()
-        
-        fig1 = px.scatter(
-            sector_avg,
-            x='PBR',
-            y='ROE',
-            size='시가총액(단위:백만원)',
-            color='섹터',
-            title='섹터별 평균 ROE vs PBR',
-            hover_name='섹터',
-            size_max=50
-        )
-        fig1.update_layout(
-            height=400,
-            legend=dict(
-                yanchor="top",
-                y=0.99,
-                xanchor="left",
-                x=1.05
-            ),
-            margin=dict(l=50, r=150, t=50, b=50)
-        )
-        st.plotly_chart(fig1, use_container_width=True)
-    
-    with col2:
-        # 섹터별 평균 배당수익률 막대 그래프
-        sector_dividend = top_value.groupby('섹터')['배당수익률'].mean().sort_values(ascending=True)
-        
-        fig2 = px.bar(
-            x=sector_dividend.values,
-            y=sector_dividend.index,
-            orientation='h',
-            title='섹터별 평균 배당수익률',
-            labels={'x': '평균 배당수익률 (%)', 'y': '섹터'}
-        )
-        fig2.update_layout(height=400)
-        st.plotly_chart(fig2, use_container_width=True)
-    
-    # 가치투자 점수 상위 10개 기업 비교
-    st.subheader("가치투자 점수 상위 10개 기업 비교")
-    top_10 = top_value.head(10)
-    
-    # 방사형 차트 (레이더 차트)
-    metrics = ['PBR', 'ROE', '배당수익률', '가치투자_점수']
-    
-    fig3 = go.Figure()
-    for idx, row in top_10.iterrows():
-        fig3.add_trace(go.Scatterpolar(
-            r=[row[metric] for metric in metrics],
-            theta=metrics,
-            name=row['종목명'],
-            fill='toself'
-        ))
-    
-    fig3.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-        showlegend=True,
-        title="상위 10개 기업의 주요 지표 비교",
-        height=500,
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=1.05)
+    fig = px.scatter(
+        top_value,
+        x='PBR',
+        y='ROE',
+        size='시가총액(단위:백만원)',
+        color='섹터',
+        hover_name='종목명',
+        title=" 가치투자 기회"
     )
-    st.plotly_chart(fig3, use_container_width=True)
+    fig.update_layout(get_chart_layout())
+    st.plotly_chart(fig, use_container_width=True)
     
-    # 상관관계 히트맵
-    correlation_metrics = ['PBR', 'ROE', '배당수익률', '배당성향', '가치투자_점수', '시가총액(단위:백만원)']
-    correlation_matrix = top_value[correlation_metrics].corr()
-    
-    fig4 = px.imshow(
-        correlation_matrix,
-        labels=dict(color="상관계수"),
-        text=correlation_matrix.round(2),
-        aspect="auto",
-        title="주요 지표간 상관관계"
+    # 투자 기회 목록
+    st.subheader("가치투자별 ")
+    st.dataframe(
+        top_value[['가치투자_점수','종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '섹터','배당수익률','배당성향']]
+        .sort_values('가치투자_점수', ascending=False)
+        .style.format({
+            'PBR': '{:.2f}',
+            'ROE': '{:.2f}%',
+            '시가총액(단위:백만원)': '{:,.0f}',
+            '가치투자_점수': '{:.0f}',
+            '배당수익률': '{:.2f}%',
+            '배당성향': '{:.2f}%',
+        })
     )
-    st.plotly_chart(fig4, use_container_width=True)
 
 # 자 전략 결론
 st.markdown("---")
