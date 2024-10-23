@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import matplotlib.font_manager as fm
+import os
 
 # 페이지 설정
 st.set_page_config(
