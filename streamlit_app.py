@@ -861,7 +861,7 @@ with tabs[5]:  # 투자 기회
     with col2:
         # 투자 기회 목록
         st.dataframe(
-            top_value[['종목명', 'PBR', 'ROE', '시가총액(단위:백만원)', '가치투자_점수', '섹터','배당수익률','배당성향']]
+            top_value[['종목명', '섹터', 'PBR', 'ROE', '시가총액(단위:백만원)', '가치투자_점수','배당수익률','배당성향']]
             .sort_values('가치투자_점수', ascending=False)
             .style.format({
                 'PBR': '{:.2f}',
