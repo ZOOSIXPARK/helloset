@@ -222,8 +222,9 @@ with tabs[0]:  # 시장 개요
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("이 차트는 시가총액 기준 상위 5개 섹터의 비중을 보여줍니다. 각 섹터가 전체 시장에서 차지하는 비율을 한눈에 파악할 수 있습니다.")
 with col2:
-    # 시가총액 로그 변환
-    df['시가총액_log'] = np.log10(df['시가총액(단위:백만원)'])
+    # 시가총액을 10억원 단위로 변환 (기존 단위: 백만원)
+    df['시가총액_10억'] = df['시가총액(단위:백만원)'] / 1000
+    df['시가총액_log'] = np.log10(df['시가총액_10억'])
     
     # 히스토그램 생성
     fig = px.histogram(
@@ -231,12 +232,12 @@ with col2:
         x='시가총액_log',
         nbins=30,
         title='기업 시가총액 분포 (로그 스케일)',
-        color_discrete_sequence=['#2E86C1']  # 더 진한 파란색 사용
+        color_discrete_sequence=['#2E86C1']
     )
     
     # x축 눈금 설정 (로그 스케일을 실제 값으로 변환)
     tick_vals = list(range(int(df['시가총액_log'].min()), int(df['시가총액_log'].max()) + 1))
-    tick_text = [f'{10**x:,.0f}' if x < 6 else f'{10**x/1000000:,.1f}M' for x in tick_vals]
+    tick_text = [f'{10**x:,.0f}억원' for x in tick_vals]
     
     fig.update_layout(
         title={
@@ -245,7 +246,7 @@ with col2:
             'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top',
-            'font': {'size': 20, 'color': '#2C3E50'}  # 진한 회색으로 변경
+            'font': {'size': 20, 'color': '#2C3E50'}
         },
         yaxis=dict(
             title="기업 수",
@@ -265,7 +266,7 @@ with col2:
         ),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        bargap=0.1,  # 막대 사이 간격 조정
+        bargap=0.1,
         showlegend=False
     )
     
@@ -279,11 +280,14 @@ with col2:
     st.plotly_chart(fig, use_container_width=True)
     
     # 분포 설명 추가
-    st.markdown("""
-    ### 시가총액 분포 분석
-    - **대다수 기업**: 중소형주 구간에 집중
-    - **소수 대형주**: 오른쪽 끝에 분포
-    - **분포 특성**: 오른쪽으로 긴 꼬리를 가진 형태 (양의 왜도)
+    med_cap = df['시가총액_10억'].median()
+    max_cap = df['시가총액_10억'].max()
+    
+    st.markdown(f"""
+    ### 시가총액 분포 특징
+    - **중앙값**: {med_cap:,.0f}억원
+    - **최대 시가총액**: {max_cap:,.0f}억원
+    - **분포 특성**: 대부분의 기업이 중소형 규모에 집중되어 있으며, 소수의 대형주가 존재하는 긴 꼬리 분포를 보입니다.
     """)
     # 배당률 높은 기업 트리맵 추가
     st.subheader("ROE 상위 50 기업 트리맵")
