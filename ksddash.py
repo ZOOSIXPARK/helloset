@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from pathlib import Path
 import os
 
@@ -115,7 +115,7 @@ class KSDMonitor:
             return pd.DataFrame()
 
 def create_metrics_html(df, log_time, direction):
-    """KPI 메트릭스를 위한 HTML 생성"""
+    """KPI 메트릭스를 위한 HTML 생���"""
     html = """
     <style>
         .metrics-container {
@@ -249,7 +249,7 @@ def main():
 
 # 데이터 표시 함수 정의
 def display_data(stats, log_time, title):
-    """HTML 대시보드와 도넛 차트를 한 행에 표시하는 함수."""
+    """HTML 대시보드와 도넛 ���트를 한 행에 표시하는 함수."""
     if not stats.empty:
         col1, col2 = st.columns(2)
 
@@ -308,39 +308,56 @@ def display_data(stats, log_time, title):
 
 # 거래 이력 조회 표시 함수
 def display_transaction_history(monitor):
-    """거래 이력 조회 기능을 구현."""
+    """거래 이력 조회 기능을 구현"""
     with st.expander("검색 조건"):
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            start_date = st.date_input("시작일", value=datetime.now().date())
-            start_time = st.time_input("시작 시간", value=datetime.strptime("00:00", "%H:%M").time())
+            result_file = st.text_input("결과 파일명", placeholder="결과 파일명을 입력하세요")
         
         with col2:
-            end_date = st.date_input("종료일", value=datetime.now().date())
-            end_time = st.time_input("종료 시간", value=datetime.now().time())
+            ksd_code = st.text_input("KSD 코드", placeholder="예시: 631, 632...")
         
         with col3:
-            direction = st.selectbox("송수신 구분", options=['전체', 'SEND', 'RECV'])
+            direction = st.selectbox("송수신 구분", options=["전체", "SEND", "RECV"])
+            st.write("")
+            search_clicked = st.button("조건검색", type="primary")
 
-        start_datetime = datetime.combine(start_date, start_time)
-        end_datetime = datetime.combine(end_date, end_time)
+    show_all = st.button("전체 조회")
 
-    if st.button("조회", type="primary"):
-        with st.spinner("데이터를 조회중입니다..."):
+    # datetime 객��� 생성 (현재 시간 기준으로 자동 설정)
+    current_time = datetime.now()
+    start_datetime = current_time - timedelta(hours=1)  # 1시간 전
+    end_datetime = current_time + timedelta(hours=1)    # 1시간 후
+
+    with st.spinner("데이터를 조회중입니다..."):
+        if search_clicked or show_all:
             tran_data = monitor.read_transaction_log(
                 start_datetime,
                 end_datetime,
-                None if direction == '전체' else direction
+                None if direction == "전체" else direction
             )
 
             if not tran_data.empty:
+                if search_clicked:  # 검색 버튼 클릭 시 필터링 적용
+                    # 결과 파일명과 KSD 코드로 필터링
+                    if result_file:
+                        tran_data = tran_data[tran_data["result_file"].str.contains(result_file, case=False, na=False)]
+                    if ksd_code:
+                        tran_data = tran_data[tran_data["ksd_code"] == ksd_code]
+                
+                # timestamp 기준으로 내림차순 정렬
+                tran_data = tran_data.sort_values('timestamp', ascending=False)
+
                 st.dataframe(
                     tran_data.style.format({
-                        'timestamp': lambda x: x.strftime('%Y-%m-%d %H:%M:%S')
+                        "timestamp": lambda x: x.strftime("%Y-%m-%d %H:%M:%S")
                     }),
                     use_container_width=True
                 )
+                
+                # 조회된 데이터 건수 표시
+                st.info(f"조회된 데이터 건수: {len(tran_data):,}건")
             else:
                 st.info("조회된 데이터가 없습니다.")
 
