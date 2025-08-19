@@ -1,0 +1,51 @@
+#!/usr/bin/expect -f
+
+# 사용법: ./sftp_upload.exp <사용자명> <비밀번호> <호스트IP> <업로드할_파일>
+set timeout 20
+
+# 인자값 설정
+set user [lindex $argv 0]
+set password [lindex $argv 1]
+set host [lindex $argv 2]
+set local_file [lindex $argv 3]
+set remote_file [file tail $local_file]
+
+# sftp 프로세스 시작
+spawn sftp -o StrictHostKeyChecking=no -o NumberOfPasswordPrompts=1 ${user}@${host}
+
+# sftp 상호작용 처리
+expect {
+  "Are you sure you want to continue connecting (yes/no)?" {
+    send "yes\r"
+    exp_continue
+  }
+  "password:" {
+    send "${password}\r"
+  }
+  "Connection refused" {
+    send_user "오류: $host 에서 연결을 거부했습니다.\n"
+    exit 1
+  }
+  "Permission denied" {
+    send_user "오류: $user@$host 권한이 거부되었습니다 (비밀번호를 확인하세요).\n"
+    exit 1
+  }
+  timeout {
+    send_user "오류: $host 연결 시간이 초과되었습니다.\n"
+    exit 1
+  }
+}
+
+# 로그인 성공 후 파일 업로드
+expect "sftp>" {
+  send "put ${local_file} ${remote_file}\r"
+}
+
+# 업로드 완료 후 종료
+expect "sftp>" {
+  send "exit\r"
+}
+
+# 프로세스가 완전히 종료될 때까지 대기
+wait
+exit 0
